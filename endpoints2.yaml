@@ -457,65 +457,6 @@ paths:
 
   
 
-  /add-to-pot:
-    post:
-      summary: Add a new listing entry
-      description: Allows users to add a new listing to the database.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                listing_name:
-                  type: string
-                iso_class_code:
-                  type: string
-                line_of_business:
-                  type: string
-                active_states:
-                  type: string
-                carrier_information:
-                  type: string
-                description:
-                  type: string
-                tags:
-                  type: string
-                limits:
-                  type: string
-                appointment_needed:
-                  type: string
-                minimum_premium:
-                  type: string
-                minimum_earned_premium:
-                  type: string
-                exclusions:
-                  type: string
-                other_specific_rules_text:
-                  type: string
-                other_specific_rules_file:
-                  type: string
-                other_specific_requirements_text:
-                  type: string
-                other_specific_requirements_file:
-                  type: string
-                underwriter_phone:
-                  type: string
-                underwriter_email:
-                  type: string
-                categories_insurance:
-                  type: string
-                organization_type:
-                  type: string
-                org_name:
-                  type: string
-      responses:
-        '200':
-          description: Entry added successfully
-        '400':
-          description: Required fields are missing
-          
           
   /api/company/{companyName}:
     get:
