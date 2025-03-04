@@ -249,38 +249,65 @@ paths:
         '400':
           description: Invalid favouriteValue
 
-  /userSavedListings:
-    get:
-      summary: Get user favorite listings
-      description: Retrieves all favorite listings for the logged-in user.
-      responses:
-        '200':
-          description: List of user favorite listings
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    list_id:
-                      type: integer
-                    fav_val:
-                      type: integer
 
-  /userRatings:
+  /filteredListings:
     get:
-      summary: Get user ratings
-      description: Retrieves all ratings submitted by the logged-in user.
+      summary: Get filtered listings
+      description: Retrieve listings filtered by search term, state, organization type, or appointment needed.
+      parameters:
+        - name: searchTerm
+          in: query
+          description: Search listings by term
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Filter by state
+          required: false
+          schema:
+            type: string
+        - name: organization_type
+          in: query
+          description: Filter by organization type
+          required: false
+          schema:
+            type: string
+        - name: appointment_needed
+          in: query
+          description: Filter by appointment needed
+          required: false
+          schema:
+            type: string
       responses:
         '200':
-          description: User ratings retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: integer
+          description: Listings retrieved successfully
+        '500':
+          description: Internal server error
+
+  /listingData:
+    get:
+      summary: Get listing data
+      description: Retrieve listing details by listing ID or tag name, including ratings and favorites for the current user.
+      parameters:
+        - name: id
+          in: query
+          description: Listing ID
+          required: false
+          schema:
+            type: integer
+        - name: tagname
+          in: query
+          description: Filter by tag name
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listing data retrieved successfully
+        '500':
+          description: Internal server error
+
 
   /api/create_password:
     post:
