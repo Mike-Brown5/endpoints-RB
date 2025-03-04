@@ -5,7 +5,7 @@ info:
     API documentation for the server, including user authentication, listings, and company data.
   version: 1.0.0
 servers:
-  - url: http://localhost:5000
+  - url: https://rb-be.eastus2.cloudapp.azure.com
 paths:
   /api/login:
     post:
@@ -88,98 +88,6 @@ paths:
         '400':
           description: Invalid input
 
-  /listingData:
-    get:
-      summary: Get listing data
-      description: Retrieve listing details by listing ID or tag name, including average ratings.
-      parameters:
-        - name: id
-          in: query
-          description: Listing ID
-          required: false
-          schema:
-            type: integer
-        - name: tagname
-          in: query
-          description: Filter by tag name
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Listing data retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    listing_name:
-                      type: string
-                    iso_class_code:
-                      type: string
-                    line_of_business:
-                      type: string
-                    carrier_information:
-                      type: string
-                    tags:
-                      type: array
-                      items:
-                        type: string
-                    description:
-                      type: string
-                    limits:
-                      type: string
-                    appointment_needed:
-                      type: boolean
-                    minimum_premium:
-                      type: number
-                    minimum_earned_premium:
-                      type: number
-                    exclusions:
-                      type: string
-                    other_specific_rules_text:
-                      type: string
-                    other_specific_rules_file:
-                      type: string
-                    other_specific_requirements_text:
-                      type: string
-                    other_specific_requirements_file:
-                      type: string
-                    underwriter_phone:
-                      type: string
-                    underwriter_email:
-                      type: string
-                    created_at:
-                      type: string
-                      format: date-time
-                    updated_at:
-                      type: string
-                      format: date-time
-                    categories_insurance:
-                      type: string
-                    created_by:
-                      type: string
-                    approved_by:
-                      type: string
-                    organization_type:
-                      type: string
-                    org_name:
-                      type: string
-                    states:
-                      type: array
-                      items:
-                        type: string
-                    average_rating:
-                      type: number
-                      nullable: true
-        '400':
-          description: Invalid input
-        '404':
-          description: Listing not found
 
   /rateListing:
     post:
@@ -393,34 +301,7 @@ paths:
         '400':
           description: No file provided or invalid file
 
-  /filteredListings:
-    get:
-      summary: Get filtered listings
-      description: Retrieve listings filtered by search term, state, or organization type.
-      parameters:
-        - name: searchTerm
-          in: query
-          description: Search listings by term
-          required: false
-          schema:
-            type: string
-        - name: state
-          in: query
-          description: Filter by state
-          required: false
-          schema:
-            type: string
-        - name: organization_type
-          in: query
-          description: Filter by organization type
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Listings retrieved successfully
-        '404':
-          description: No listings found
+  
 
   /api/uniqueData:
     get:
