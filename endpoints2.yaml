@@ -1,0 +1,669 @@
+openapi: 3.0.3
+info:
+  title: Server API
+  description: |
+    API documentation for the server, including user authentication, listings, and company data.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+paths:
+  /api/login:
+    post:
+      summary: User login
+      description: Authenticate a user and return a JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+
+  /api/companies:
+    get:
+      summary: Get company data
+      description: Retrieve all company details or a specific company by ID.
+      parameters:
+        - name: id
+          in: query
+          description: Company ID
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Company data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+        '404':
+          description: Company not found
+
+  /api/listings:
+    post:
+      summary: Create a new listing
+      description: Adds a new listing to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listing_name:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Listing created successfully
+        '400':
+          description: Invalid input
+
+  /listingData:
+    get:
+      summary: Get listing data
+      description: Retrieve listing details by listing ID or tag name, including average ratings.
+      parameters:
+        - name: id
+          in: query
+          description: Listing ID
+          required: false
+          schema:
+            type: integer
+        - name: tagname
+          in: query
+          description: Filter by tag name
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listing data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    listing_name:
+                      type: string
+                    iso_class_code:
+                      type: string
+                    line_of_business:
+                      type: string
+                    carrier_information:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    description:
+                      type: string
+                    limits:
+                      type: string
+                    appointment_needed:
+                      type: boolean
+                    minimum_premium:
+                      type: number
+                    minimum_earned_premium:
+                      type: number
+                    exclusions:
+                      type: string
+                    other_specific_rules_text:
+                      type: string
+                    other_specific_rules_file:
+                      type: string
+                    other_specific_requirements_text:
+                      type: string
+                    other_specific_requirements_file:
+                      type: string
+                    underwriter_phone:
+                      type: string
+                    underwriter_email:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    updated_at:
+                      type: string
+                      format: date-time
+                    categories_insurance:
+                      type: string
+                    created_by:
+                      type: string
+                    approved_by:
+                      type: string
+                    organization_type:
+                      type: string
+                    org_name:
+                      type: string
+                    states:
+                      type: array
+                      items:
+                        type: string
+                    average_rating:
+                      type: number
+                      nullable: true
+        '400':
+          description: Invalid input
+        '404':
+          description: Listing not found
+
+  /rateListing:
+    post:
+      summary: Rate a listing
+      description: Allows users to submit a rating for a listing between 1 and 5.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId:
+                  type: integer
+                userId:
+                  type: string
+                rating:
+                  type: integer
+      responses:
+        '201':
+          description: Rating submitted successfully
+        '400':
+          description: Rating must be between 1 and 5
+
+  /api/organizations:
+    get:
+      summary: Get organization details
+      description: Fetch organization details and corresponding contacts by organization name.
+      parameters:
+        - name: name
+          in: query
+          description: Organization name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Organization details retrieved successfully
+        '400':
+          description: No organization name provided
+        '404':
+          description: No matching organization found
+
+  /saveListings:
+    post:
+      summary: Save or update a favorite listing
+      description: Allows users to add or update their favorite listings.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                listing_id:
+                  type: integer
+                favouriteValue:
+                  type: integer
+                  enum: [0, 1]
+      responses:
+        '201':
+          description: Favourite listing added successfully
+        '200':
+          description: Favourite listing updated successfully
+        '400':
+          description: Invalid favouriteValue
+
+  /userSavedListings:
+    get:
+      summary: Get user favorite listings
+      description: Retrieves all favorite listings for the logged-in user.
+      responses:
+        '200':
+          description: List of user favorite listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    list_id:
+                      type: integer
+                    fav_val:
+                      type: integer
+
+  /userRatings:
+    get:
+      summary: Get user ratings
+      description: Retrieves all ratings submitted by the logged-in user.
+      responses:
+        '200':
+          description: User ratings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+
+  /api/create_password:
+    post:
+      summary: Create a new password
+      description: Allows a user to create a password if one is not already set.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Password set successfully
+        '400':
+          description: Password is already set or not provided
+
+  /api/logout:
+    post:
+      summary: Logout user
+      description: Logs out the current user by clearing the authentication token.
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /api/profile:
+    get:
+      summary: Get user profile
+      description: Retrieves the profile details of the logged-in user, including profile picture.
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  profile_picture:
+                    type: string
+                    nullable: true
+                  role:
+                    type: string
+
+  /api/change_password:
+    post:
+      summary: Change user password
+      description: Allows a user to change their password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Password updated successfully
+
+  /api/change_profile_picture:
+    post:
+      summary: Change user profile picture
+      description: Allows a user to upload and change their profile picture.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profile_picture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Profile picture updated successfully
+        '400':
+          description: No file provided or invalid file
+
+  /filteredListings:
+    get:
+      summary: Get filtered listings
+      description: Retrieve listings filtered by search term, state, or organization type.
+      parameters:
+        - name: searchTerm
+          in: query
+          description: Search listings by term
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Filter by state
+          required: false
+          schema:
+            type: string
+        - name: organization_type
+          in: query
+          description: Filter by organization type
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listings retrieved successfully
+        '404':
+          description: No listings found
+
+  /api/uniqueData:
+    get:
+      summary: Get unique data
+      description: Retrieves unique organization names and tags from the database.
+      responses:
+        '200':
+          description: Unique data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uniqueNames:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        label:
+                          type: string
+                  uniqueTags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        label:
+                          type: string
+
+  /listingCounts:
+    get:
+      summary: Get listing counts
+      description: Retrieves counts of listings based on common search terms.
+      responses:
+        '200':
+          description: Listing counts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  
+                  
+  /recentListings:
+    get:
+      summary: Get recent listings
+      description: Retrieve the 80 most recent listings.
+      responses:
+        '200':
+          description: Recent listings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  
+
+  /add-to-pot:
+    post:
+      summary: Add a new listing entry
+      description: Allows users to add a new listing to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listing_name:
+                  type: string
+                iso_class_code:
+                  type: string
+                line_of_business:
+                  type: string
+                active_states:
+                  type: string
+                carrier_information:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: string
+                limits:
+                  type: string
+                appointment_needed:
+                  type: string
+                minimum_premium:
+                  type: string
+                minimum_earned_premium:
+                  type: string
+                exclusions:
+                  type: string
+                other_specific_rules_text:
+                  type: string
+                other_specific_rules_file:
+                  type: string
+                other_specific_requirements_text:
+                  type: string
+                other_specific_requirements_file:
+                  type: string
+                underwriter_phone:
+                  type: string
+                underwriter_email:
+                  type: string
+                categories_insurance:
+                  type: string
+                organization_type:
+                  type: string
+                org_name:
+                  type: string
+      responses:
+        '200':
+          description: Entry added successfully
+        '400':
+          description: Required fields are missing
+          
+          
+  /api/company/{companyName}:
+    get:
+      summary: Get company details by name
+      description: Retrieve details of a specific company by its name.
+      parameters:
+        - name: companyName
+          in: path
+          description: The name of the company to retrieve.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Company details retrieved successfully
+        '404':
+          description: Company not found
+
+  /api/listing/{name}:
+    get:
+      summary: Get listing details by name
+      description: Retrieve details of a specific listing by its name.
+      parameters:
+        - name: name
+          in: path
+          description: The name of the listing to retrieve.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listing details retrieved successfully
+        '404':
+          description: Listing not found
+
+  /updateListing:
+    post:
+      summary: Update a listing
+      description: Allows an admin to update a listing's details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: Listing updated successfully
+        '403':
+          description: Admin privileges required
+        '404':
+          description: Listing not found
+
+  /api/top_companies_with_listings:
+    get:
+      summary: Get top companies with listings
+      description: Retrieve the top companies along with their listing counts.
+      responses:
+        '200':
+          description: Top companies retrieved successfully
+        '500':
+          description: Internal server error
+
+  /api/top_companies_with_listingsNum:
+    get:
+      summary: Get top companies with listing numbers
+      description: Retrieve companies with their number of listings.
+      parameters:
+        - name: limit
+          in: query
+          description: Number of companies to retrieve
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Companies retrieved successfully
+
+  /updateOrg:
+    post:
+      summary: Update organization details
+      description: Allows an admin to update organization details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ID:
+                  type: integer
+      responses:
+        '200':
+          description: Organization updated successfully
+        '403':
+          description: Admin privileges required
+        '404':
+          description: Organization not found
+
+  /add-organization:
+    post:
+      summary: Add a new organization
+      description: Allows an admin to add a new organization to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Company_Name:
+                  type: string
+                Company_URL:
+                  type: string
+                Description:
+                  type: string
+                HQPhoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Organization added successfully
+        '400':
+          description: Required fields missing
+
+  /api/manageOrgNames:
+    get:
+      summary: Get organization names
+      description: Retrieve all organization names assigned to the user.
+      responses:
+        '200':
+          description: Organization names retrieved successfully
+    post:
+      summary: Add organization name
+      description: Allows a super admin to add an organization name.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                org_name:
+                  type: string
+      responses:
+        '201':
+          description: Organization name added successfully
+        '400':
+          description: Organization name already exists
