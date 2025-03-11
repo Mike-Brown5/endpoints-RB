@@ -1,16 +1,80 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
-  title: Server API
-  description: |
-    API documentation for the server, including user authentication, listings, and company data.
+  title: Risk Bean Backend API
+  description: API endpoints for user authentication and account management
   version: 1.0.0
 servers:
   - url: https://rb-be.eastus2.cloudapp.azure.com
 paths:
+  /api/signup:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+              required:
+                - email
+      responses:
+        '200':
+          description: Verification code sent to email
+          content:
+            application/json:
+              example:
+                message: "Verification code sent to email"
+        '400':
+          description: Email is required or already registered
+          content:
+            application/json:
+              example:
+                error: "Email is required"
+        '500':
+          description: Failed to send email
+          content:
+            application/json:
+              example:
+                error: "Failed to send email"
+  /api/verify:
+    post:
+      summary: Verify email with a code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                code:
+                  type: string
+              required:
+                - email
+                - code
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              example:
+                message: "Email verified"
+                needs_password_setup: true
+                token: "jwt_token_here"
+        '400':
+          description: Invalid or expired code
+          content:
+            application/json:
+              example:
+                error: "Invalid verification code"
   /api/login:
     post:
-      summary: User login
-      description: Authenticate a user and return a JWT token.
+      summary: Login a user
       requestBody:
         required: true
         content:
@@ -22,51 +86,30 @@ paths:
                   type: string
                 password:
                   type: string
+                provider:
+                  type: string
+                  enum: [google, facebook]
+              required:
+                - username
+                - password
       responses:
         '200':
           description: Successful login
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
+              example:
+                success: true
+                token: "jwt_token_here"
+                roles: "user"
         '401':
           description: Invalid credentials
-
-  /api/companies:
-    get:
-      summary: Get company data
-      description: Retrieve all company details or a specific company by ID.
-      parameters:
-        - name: id
-          in: query
-          description: Company ID
-          required: false
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Company data retrieved successfully
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-        '404':
-          description: Company not found
-
-  /api/listings:
+              example:
+                message: "Invalid username or password"
+  /api/reset_password:
     post:
-      summary: Create a new listing
-      description: Adds a new listing to the database.
+      summary: Reset password
       requestBody:
         required: true
         content:
@@ -74,25 +117,244 @@ paths:
             schema:
               type: object
               properties:
-                listing_name:
+                password:
                   type: string
-                description:
-                  type: string
-                tags:
-                  type: array
-                  items:
-                    type: string
+                  example: "NewSecurePassword123!"
+              required:
+                - password
       responses:
-        '201':
-          description: Listing created successfully
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              example:
+                message: "Password reset successfully"
         '400':
-          description: Invalid input
+          description: Missing password
+          content:
+            application/json:
+              example:
+                error: "Password is required"
+  /api/logout:
+    post:
+      summary: Logout user
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              example:
+                success: true
+                message: "Logged out successfully"
+  /api/create_password:
+    post:
+      summary: Create a new password for the authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: New password
+      responses:
+        "200":
+          description: Password created successfully
+        "400":
+          description: Password is required or already set
+
+  /api/manageOrgNames:
+    get:
+      summary: Retrieve all organizational records (SuperAdmin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of organizational records
+    post:
+      summary: Add a new organization for a target user (SuperAdmin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                org_name:
+                  type: string
+                  description: Name of the organization
+                target_user:
+                  type: string
+                  description: Email of the target user
+      responses:
+        "201":
+          description: Organization added successfully
+        "400":
+          description: Missing parameters or organization already exists
+        "403":
+          description: SuperAdmin access required
+
+  /api/request_password_reset:
+    post:
+      summary: Request a password reset by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: User email
+      responses:
+        "200":
+          description: Password reset code sent
+        "400":
+          description: Email is required or no user found
+        "500":
+          description: Failed to send email
+
+  /api/verify_password_reset:
+    post:
+      summary: Verify password reset code and generate a temporary token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: User email
+                code:
+                  type: string
+                  description: Verification code
+      responses:
+        "200":
+          description: Verification successful, token generated
+        "400":
+          description: Invalid or expired verification code
 
 
-  /rateListing:
+
+  /api/filteredListings:
+    get:
+      summary: Retrieve filtered listings
+      security:
+        # - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+          description: Filter by listing ID
+        - name: searchTerm
+          in: query
+          schema:
+            type: string
+          description: Search term for filtering
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by active states
+        - name: organization_type
+          in: query
+          schema:
+            type: string
+          description: Filter by organization type
+        - name: appointment_needed
+          in: query
+          schema:
+            type: boolean
+          description: Filter by appointment requirement
+        - name: approved_by
+          in: query
+          schema:
+            type: string
+          description: Filter by approval status
+        - name: org_name
+          in: query
+          schema:
+            type: string
+          description: Filter by organization name
+        - name: created_by
+          in: query
+          schema:
+            type: string
+          description: Filter by creator
+      responses:
+        '200':
+          description: A list of filtered listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        listing_name:
+                          type: string
+                        description:
+                          type: string
+                        approved_by:
+                          type: string
+                        organization_type:
+                          type: string
+                        appointment_needed:
+                          type: boolean
+                  appointment_needed_count:
+                    type: integer
+                  tags_summary:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        count:
+                          type: integer
+        '500':
+          description: Internal server error
+  /api/listing_file/{listing_id}:
+    get:
+      summary: Retrieve a file associated with a listing
+      parameters:
+        - name: listing_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: file_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [rules, requirements]
+          description: Type of file to retrieve
+      responses:
+        '200':
+          description: File retrieved successfully
+        '400':
+          description: Invalid file type
+        '404':
+          description: File not found
+  /api/rateListing:
     post:
       summary: Rate a listing
-      description: Allows users to submit a rating for a listing between 1 and 5.
       requestBody:
         required: true
         content:
@@ -101,40 +363,26 @@ paths:
               type: object
               properties:
                 listingId:
-                  type: integer
+                  type: string
                 userId:
                   type: string
                 rating:
                   type: integer
+                  minimum: 1
+                  maximum: 5
       responses:
         '201':
           description: Rating submitted successfully
         '400':
-          description: Rating must be between 1 and 5
+          description: Invalid rating value
 
-  /api/organizations:
-    get:
-      summary: Get organization details
-      description: Fetch organization details and corresponding contacts by organization name.
-      parameters:
-        - name: name
-          in: query
-          description: Organization name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Organization details retrieved successfully
-        '400':
-          description: No organization name provided
-        '404':
-          description: No matching organization found
-
-  /saveListings:
+  /api/saveListings:
     post:
-      summary: Save or update a favorite listing
-      description: Allows users to add or update their favorite listings.
+      summary: Add or update a favourite listing for a user
+      description: |
+        Receives JSON data containing username, listing_id, and favouriteValue.
+        If a favourite listing exists for the given user and listing, the favourite value is updated;
+        otherwise, a new record is created.
       requestBody:
         required: true
         content:
@@ -144,83 +392,279 @@ paths:
               properties:
                 username:
                   type: string
+                  example: "user@example.com"
                 listing_id:
                   type: integer
+                  example: 123
                 favouriteValue:
                   type: integer
                   enum: [0, 1]
+                  example: 1
+              required:
+                - username
+                - listing_id
+                - favouriteValue
+      responses:
+        '200':
+          description: Favourite listing updated successfully.
+          content:
+            application/json:
+              example:
+                message: "Favourite listing updated successfully"
+        '201':
+          description: Favourite listing added successfully.
+          content:
+            application/json:
+              example:
+                message: "Favourite listing added successfully"
+        '400':
+          description: Invalid request (e.g., favouriteValue not 0 or 1)
+          content:
+            application/json:
+              example:
+                error: "favouriteValue must be 0 or 1"
+
+  /api/createlistings:
+    post:
+      summary: Create a new listing
+      description: |
+        Receives form data (and file uploads) to create a new listing in the 'listings_00123' table.
+        Processes PDF file uploads for 'other_specific_rules_file' and 'other_specific_requirements_file'
+        by encrypting and saving them to disk, then updates the record with the file paths.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                listing_name:
+                  type: string
+                  example: "New Listing"
+                iso_class_code:
+                  type: string
+                  example: "ISO1234"
+                line_of_business:
+                  type: string
+                  example: "Insurance"
+                active_states:
+                  type: string
+                  example: "NY, CA"
+                carrier_information:
+                  type: string
+                  example: "Carrier Information"
+                description:
+                  type: string
+                  example: "Listing description..."
+                tags:
+                  type: string
+                  example: "tag1, tag2"
+                limits:
+                  type: string
+                  example: "10000"
+                appointment_needed:
+                  type: string
+                  enum: ["0", "1"]
+                  example: "1"
+                minimum_premium:
+                  type: string
+                  example: "1000"
+                minimum_earned_premium:
+                  type: string
+                  example: "500"
+                exclusions:
+                  type: string
+                  example: "Exclusions details"
+                other_specific_rules_text:
+                  type: string
+                  example: "Rules text..."
+                other_specific_requirements_text:
+                  type: string
+                  example: "Requirements text..."
+                underwriter_phone:
+                  type: string
+                  example: "1234567890"
+                underwriter_email:
+                  type: string
+                  example: "underwriter@example.com"
+                categories_insurance:
+                  type: string
+                  example: "Category1, Category2"
+                organization_type:
+                  type: string
+                  example: "Type A"
+                org_name:
+                  type: string
+                  example: "Organization XYZ"
+                contacts:
+                  type: string
+                  description: JSON string representing an array of contact objects
+                  example: '[{"contact_name": "John Doe", "contact_phone": "555-1234", "contact_email": "john@example.com", "speciality": "General", "city": "New York", "state": "NY"}]'
+                other_specific_rules_file:
+                  type: string
+                  format: binary
+                other_specific_requirements_file:
+                  type: string
+                  format: binary
+              required:
+                - listing_name
+                - iso_class_code
+                - line_of_business
+                - active_states
+                - carrier_information
+                - description
+                - tags
+                - limits
+                - appointment_needed
+                - minimum_premium
+                - minimum_earned_premium
+                - exclusions
+                - other_specific_rules_text
+                - other_specific_requirements_text
+                - underwriter_phone
+                - underwriter_email
+                - categories_insurance
+                - organization_type
+                - org_name
       responses:
         '201':
-          description: Favourite listing added successfully
-        '200':
-          description: Favourite listing updated successfully
+          description: Listing created successfully
+          content:
+            application/json:
+              example:
+                message: "Listing created successfully"
+                listing_id: 456
         '400':
-          description: Invalid favouriteValue
-
-
-  /filteredListings:
-    get:
-      summary: Get filtered listings
-      description: Retrieve listings filtered by search term, state, organization type, or appointment needed.
-      parameters:
-        - name: searchTerm
-          in: query
-          description: Search listings by term
-          required: false
-          schema:
-            type: string
-        - name: state
-          in: query
-          description: Filter by state
-          required: false
-          schema:
-            type: string
-        - name: organization_type
-          in: query
-          description: Filter by organization type
-          required: false
-          schema:
-            type: string
-        - name: appointment_needed
-          in: query
-          description: Filter by appointment needed
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Listings retrieved successfully
+          description: Bad Request (e.g., invalid file type or missing fields)
+          content:
+            application/json:
+              example:
+                error: "other_specific_rules_file must be a PDF file"
         '500':
-          description: Internal server error
-
-  /listingData:
-    get:
-      summary: Get listing data
-      description: Retrieve listing details by listing ID or tag name, including ratings and favorites for the current user.
-      parameters:
-        - name: id
-          in: query
-          description: Listing ID
-          required: false
-          schema:
-            type: integer
-        - name: tagname
-          in: query
-          description: Filter by tag name
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Listing data retrieved successfully
-        '500':
-          description: Internal server error
-
-
-  /api/create_password:
+          description: Internal Server Error (e.g., database error)
+          content:
+            application/json:
+              example:
+                error: "Database error"
+  /api/updateListing:
     post:
-      summary: Create a new password
-      description: Allows a user to create a password if one is not already set.
+      summary: Update a listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: The ID of the listing to update
+                  example: "123"
+                listing_name:
+                  type: string
+                  example: "New Listing Name"
+                iso_class_code:
+                  type: string
+                  example: "ISO-123"
+                line_of_business:
+                  type: string
+                  example: "Insurance"
+                active_states:
+                  type: string
+                  description: Comma-separated list of active states
+                  example: "CA, NY"
+                carrier_information:
+                  type: string
+                  example: "Carrier XYZ"
+                description:
+                  type: string
+                  example: "Detailed description"
+                tags:
+                  type: string
+                  description: Comma-separated tags
+                  example: "tag1, tag2"
+                limits:
+                  type: string
+                  example: "Limit details"
+                appointment_needed:
+                  type: string
+                  example: "Yes"
+                minimum_premium:
+                  type: string
+                  example: "1000"
+                minimum_earned_premium:
+                  type: string
+                  example: "500"
+                exclusions:
+                  type: string
+                  example: "Exclusion details"
+                other_specific_rules_text:
+                  type: string
+                  example: "Rules text"
+                other_specific_rules_file:
+                  type: string
+                  format: binary
+                other_specific_requirements_text:
+                  type: string
+                  example: "Requirements text"
+                other_specific_requirements_file:
+                  type: string
+                  format: binary
+                underwriter_phone:
+                  type: string
+                  example: "1234567890"
+                underwriter_email:
+                  type: string
+                  example: "underwriter@example.com"
+                categories_insurance:
+                  type: string
+                  example: "Category 1"
+                organization_type:
+                  type: string
+                  example: "Type A"
+                org_name:
+                  type: string
+                  example: "Org XYZ"
+              required:
+                - id
+      responses:
+        '200':
+          description: Listing updated successfully
+          content:
+            application/json:
+              example:
+                message: "Listing updated successfully"
+        '400':
+          description: Missing required fields or invalid file format
+          content:
+            application/json:
+              examples:
+                missing_listing_id:
+                  value: { "error": "Listing id is required" }
+                invalid_file:
+                  value: { "error": "other_specific_rules_file must be a PDF file" }
+        '403':
+          description: Not authorized to update listing
+          content:
+            application/json:
+              example:
+                error: "Admin privileges required"
+        '404':
+          description: Listing not found
+          content:
+            application/json:
+              example:
+                error: "Listing not found"
+
+  /api/approve_listing:
+    post:
+      summary: Approve a listing
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -228,29 +672,402 @@ paths:
             schema:
               type: object
               properties:
-                password:
+                id:
                   type: string
+                  description: The ID of the listing to approve
+                  example: "123"
+              required:
+                - id
       responses:
         '200':
-          description: Password set successfully
+          description: Listing approved successfully
+          content:
+            application/json:
+              example:
+                message: "Listing approved successfully"
         '400':
-          description: Password is already set or not provided
-
-  /api/logout:
-    post:
-      summary: Logout user
-      description: Logs out the current user by clearing the authentication token.
+          description: Listing id is required
+          content:
+            application/json:
+              example:
+                error: "Listing id is required"
+        '403':
+          description: Not authorized to approve listing
+          content:
+            application/json:
+              example:
+                error: "You do not have permission to approve this listing"
+        '404':
+          description: Listing not found
+          content:
+            application/json:
+              example:
+                error: "Listing not found"
+  /api/orgData:
+    get:
+      summary: Retrieve organization data
+      description: >
+        Retrieve a list of organizations or a single organization if filtered by 'id'.
+        Optional query parameters include organization id, organization type,
+        and approval status.
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: integer
+          required: false
+          description: Filter by organization id
+        - in: query
+          name: organization_type
+          schema:
+            type: string
+          required: false
+          description: Filter by organization type
+        - in: query
+          name: approved_by
+          schema:
+            type: string
+            enum: [approved, not_approved]
+          required: false
+          description: Filter by approval status ("approved" means non-empty approved_by; "not_approved" means approved_by is empty)
       responses:
         '200':
-          description: Logged out successfully
+          description: Organization data retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+                  - $ref: '#/components/schemas/Organization'
+              examples:
+                listExample:
+                  summary: List of organizations
+                  value:
+                    - id: 1
+                      organization_name: "Org A"
+                      organization_type: "Type A"
+                      organization_creation_year: "2020"
+                      contact_phone_number_1: "+123456789"
+                      contact_email_address: "contact@orga.com"
+                      organization_website: "https://www.orga.com"
+                      short_description: "A short description"
+                      minimum_premium: "1000"
+                      minimum_earned_premium: "500"
+                      exclusions: "Exclusion details"
+                      other_specific_rules_text: "Rules text"
+                      other_specific_requirements_text: "Requirements text"
+                      created_by: "admin@example.com"
+                      approved_by: "approver@example.com"
+                      organization_photo_url: "https://example.com/photo.jpg"
+                      other_specific_rules_file_url: "https://example.com/rules.pdf"
+                      other_specific_requirements_file_url: "https://example.com/requirements.pdf"
+                singleExample:
+                  summary: Single organization
+                  value:
+                    id: 1
+                    organization_name: "Org A"
+                    organization_type: "Type A"
+                    organization_creation_year: "2020"
+                    contact_phone_number_1: "+123456789"
+                    contact_email_address: "contact@orga.com"
+                    organization_website: "https://www.orga.com"
+                    short_description: "A short description"
+                    minimum_premium: "1000"
+                    minimum_earned_premium: "500"
+                    exclusions: "Exclusion details"
+                    other_specific_rules_text: "Rules text"
+                    other_specific_requirements_text: "Requirements text"
+                    created_by: "admin@example.com"
+                    approved_by: "approver@example.com"
+                    organization_photo_url: "https://example.com/photo.jpg"
+                    other_specific_rules_file_url: "https://example.com/rules.pdf"
+                    other_specific_requirements_file_url: "https://example.com/requirements.pdf"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                error: "Internal server error"
+                message: "Error message here"
 
+  /api/create_org:
+    post:
+      summary: Create a new organization
+      description: >
+        Create a new organization record. This endpoint accepts multipart form data
+        including text fields and file uploads. Authentication is required.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                organization_name:
+                  type: string
+                  example: "Org A"
+                organization_type:
+                  type: string
+                  example: "Type A"
+                organization_creation_year:
+                  type: string
+                  example: "2020"
+                contact_phone_number_1:
+                  type: string
+                  example: "+123456789"
+                contact_email_address:
+                  type: string
+                  example: "contact@orga.com"
+                organization_website:
+                  type: string
+                  example: "https://www.orga.com"
+                short_description:
+                  type: string
+                  example: "A short description of the organization."
+                minimum_premium:
+                  type: string
+                  example: "1000"
+                minimum_earned_premium:
+                  type: string
+                  example: "500"
+                exclusions:
+                  type: string
+                  example: "Exclusion details"
+                other_specific_rules_text:
+                  type: string
+                  example: "Rules text details"
+                other_specific_requirements_text:
+                  type: string
+                  example: "Requirements text details"
+                organization_photo:
+                  type: string
+                  format: binary
+                other_specific_rules_file:
+                  type: string
+                  format: binary
+                other_specific_requirements_file:
+                  type: string
+                  format: binary
+              required:
+                - organization_name
+                - contact_phone_number_1
+                - contact_email_address
+                - organization_website
+                - short_description
+      responses:
+        '200':
+          description: Organization created successfully
+          content:
+            application/json:
+              example:
+                message: "Organization created successfully"
+                org_id: 123
+        '400':
+          description: Missing required fields or file type error
+          content:
+            application/json:
+              example:
+                error: "organization_name, contact_phone_number_1, contact_email_address, organization_website, and short_description are required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                error: "Internal server error"
+                message: "Detailed error message"
+  /api/org_file/{org_id}:
+    get:
+      summary: Retrieve an organization file by type
+      parameters:
+        - in: path
+          name: org_id
+          required: true
+          schema:
+            type: integer
+          description: ID of the organization record.
+        - in: query
+          name: file_type
+          required: true
+          schema:
+            type: string
+            enum: [rules, requirements, photo]
+          # description: Type of file to retrieve. Valid values:      
+      responses:
+        '200':
+          description: Successfully retrieved the file.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: "<binary PDF data>"
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+              example: "<binary JPEG data>"
+        '400':
+          description: Invalid file type or missing required parameter.
+          content:
+            application/json:
+              example:
+                error: "Invalid file type"
+        '500':
+          description: File decryption failed or file data is corrupted.
+          content:
+            application/json:
+              example:
+                error: "File data is corrupted or invalid."
+        '404':
+          description: File not found.
+          content:
+            application/json:
+              example:
+                error: "File not found"
+  /api/update_org:
+    post:
+      summary: Update an organization's details
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Organization ID (required)
+                organization_name:
+                  type: string
+                organization_type:
+                  type: string
+                organization_creation_year:
+                  type: string
+                contact_phone_number_1:
+                  type: string
+                contact_email_address:
+                  type: string
+                organization_website:
+                  type: string
+                short_description:
+                  type: string
+                minimum_premium:
+                  type: string
+                minimum_earned_premium:
+                  type: string
+                exclusions:
+                  type: string
+                other_specific_rules_text:
+                  type: string
+                other_specific_requirements_text:
+                  type: string
+                organization_photo:
+                  type: string
+                  format: binary
+                  description: Organization photo (JPG, JPEG, PNG)
+                other_specific_rules_file:
+                  type: string
+                  format: binary
+                  description: PDF file containing specific rules
+                other_specific_requirements_file:
+                  type: string
+                  format: binary
+                  description: PDF file containing specific requirements
+      responses:
+        '200':
+          description: Organization updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Organization updated successfully
+        '400':
+          description: Bad request (e.g., missing required fields, invalid file format)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Organization id is required
+        '403':
+          description: Forbidden - User does not have permission to update organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: You do not have permission to edit this organization
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Organization not found
+  /api/approve_org:
+    post:
+      summary: Approve an organization listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 123
+      responses:
+        "200":
+          description: Organization approved successfully
+          content:
+            application/json:
+              example:
+                message: Organization approved successfully
+        "400":
+          description: Organization ID is required
+          content:
+            application/json:
+              example:
+                error: organization id is required
+        "403":
+          description: User does not have permission to approve
+          content:
+            application/json:
+              example:
+                error: You do not have permission to approve this organization
+        "404":
+          description: Organization not found
+          content:
+            application/json:
+              example:
+                error: organization not found
   /api/profile:
     get:
       summary: Get user profile
-      description: Retrieves the profile details of the logged-in user, including profile picture.
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: User profile retrieved successfully
+          description: User profile data
           content:
             application/json:
               schema:
@@ -258,33 +1075,41 @@ paths:
                 properties:
                   username:
                     type: string
-                  profile_picture:
+                  profile_picture_url:
                     type: string
                     nullable: true
                   role:
                     type: string
+        '401':
+          description: Unauthorized
 
-  /api/change_password:
-    post:
-      summary: Change user password
-      description: Allows a user to change their password.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                password:
-                  type: string
+  /api/profile_picture/{username}:
+    get:
+      summary: Get profile picture of a user
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: Password updated successfully
+          description: Profile picture
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No profile picture found
+        '500':
+          description: Error retrieving profile picture
 
   /api/change_profile_picture:
     post:
-      summary: Change user profile picture
-      description: Allows a user to upload and change their profile picture.
+      summary: Change user's profile picture
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -299,111 +1124,15 @@ paths:
         '200':
           description: Profile picture updated successfully
         '400':
-          description: No file provided or invalid file
+          description: Bad request (e.g., no file selected)
+        '401':
+          description: Unauthorized
 
-  
-
-  /api/uniqueData:
-    get:
-      summary: Get unique data
-      description: Retrieves unique organization names and tags from the database.
-      responses:
-        '200':
-          description: Unique data retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  uniqueNames:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        value:
-                          type: string
-                        label:
-                          type: string
-                  uniqueTags:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        value:
-                          type: string
-                        label:
-                          type: string
-
-  /listingCounts:
-    get:
-      summary: Get listing counts
-      description: Retrieves counts of listings based on common search terms.
-      responses:
-        '200':
-          description: Listing counts retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: integer
-                  
-                  
-  /recentListings:
-    get:
-      summary: Get recent listings
-      description: Retrieve the 80 most recent listings.
-      responses:
-        '200':
-          description: Recent listings retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-
-  
-
-          
-  /api/company/{companyName}:
-    get:
-      summary: Get company details by name
-      description: Retrieve details of a specific company by its name.
-      parameters:
-        - name: companyName
-          in: path
-          description: The name of the company to retrieve.
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Company details retrieved successfully
-        '404':
-          description: Company not found
-
-  /api/listing/{name}:
-    get:
-      summary: Get listing details by name
-      description: Retrieve details of a specific listing by its name.
-      parameters:
-        - name: name
-          in: path
-          description: The name of the listing to retrieve.
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Listing details retrieved successfully
-        '404':
-          description: Listing not found
-
-  /updateListing:
+  /api/change_password:
     post:
-      summary: Update a listing
-      description: Allows an admin to update a listing's details.
+      summary: Change user's password
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -411,108 +1140,78 @@ paths:
             schema:
               type: object
               properties:
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: Listing updated successfully
-        '403':
-          description: Admin privileges required
-        '404':
-          description: Listing not found
-
-  /api/top_companies_with_listings:
-    get:
-      summary: Get top companies with listings
-      description: Retrieve the top companies along with their listing counts.
-      responses:
-        '200':
-          description: Top companies retrieved successfully
-        '500':
-          description: Internal server error
-
-  /api/top_companies_with_listingsNum:
-    get:
-      summary: Get top companies with listing numbers
-      description: Retrieve companies with their number of listings.
-      parameters:
-        - name: limit
-          in: query
-          description: Number of companies to retrieve
-          required: false
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Companies retrieved successfully
-
-  /updateOrg:
-    post:
-      summary: Update organization details
-      description: Allows an admin to update organization details.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                ID:
-                  type: integer
-      responses:
-        '200':
-          description: Organization updated successfully
-        '403':
-          description: Admin privileges required
-        '404':
-          description: Organization not found
-
-  /add-organization:
-    post:
-      summary: Add a new organization
-      description: Allows an admin to add a new organization to the database.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                Company_Name:
-                  type: string
-                Company_URL:
-                  type: string
-                Description:
-                  type: string
-                HQPhoneNumber:
+                password:
                   type: string
       responses:
         '200':
-          description: Organization added successfully
-        '400':
-          description: Required fields missing
+          description: Password updated successfully
+        '401':
+          description: Unauthorized
 
-  /api/manageOrgNames:
-    get:
-      summary: Get organization names
-      description: Retrieve all organization names assigned to the user.
-      responses:
-        '200':
-          description: Organization names retrieved successfully
-    post:
-      summary: Add organization name
-      description: Allows a super admin to add an organization name.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                org_name:
-                  type: string
-      responses:
-        '201':
-          description: Organization name added successfully
-        '400':
-          description: Organization name already exists
+components:
+  schemas:
+    Organization:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        organization_name:
+          type: string
+          example: "Org A"
+        organization_type:
+          type: string
+          example: "Type A"
+        organization_creation_year:
+          type: string
+          example: "2020"
+        contact_phone_number_1:
+          type: string
+          example: "+123456789"
+        contact_email_address:
+          type: string
+          example: "contact@orga.com"
+        organization_website:
+          type: string
+          example: "https://www.orga.com"
+        short_description:
+          type: string
+          example: "A short description"
+        minimum_premium:
+          type: string
+          example: "1000"
+        minimum_earned_premium:
+          type: string
+          example: "500"
+        exclusions:
+          type: string
+          example: "Exclusion details"
+        other_specific_rules_text:
+          type: string
+          example: "Rules text"
+        other_specific_requirements_text:
+          type: string
+          example: "Requirements text"
+        created_by:
+          type: string
+          example: "admin@example.com"
+        approved_by:
+          type: string
+          example: "approver@example.com"
+        organization_photo_url:
+          type: string
+          nullable: true
+          example: "https://example.com/photo.jpg"
+        other_specific_rules_file_url:
+          type: string
+          nullable: true
+          example: "https://example.com/rules.pdf"
+        other_specific_requirements_file_url:
+          type: string
+          nullable: true
+          example: "https://example.com/requirements.pdf"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
