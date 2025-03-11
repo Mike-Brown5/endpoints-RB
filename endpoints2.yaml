@@ -249,7 +249,7 @@ paths:
     get:
       summary: Retrieve filtered listings
       security:
-        # - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: query
