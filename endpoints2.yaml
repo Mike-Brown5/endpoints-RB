@@ -42,7 +42,7 @@ paths:
                 error: "Failed to send email"
   /api/verify:
     post:
-      summary: Verify email with a code
+      summary: Verify email with a code action can be either (signup, reset)
       requestBody:
         required: true
         content:
@@ -54,6 +54,7 @@ paths:
                   type: string
                 code:
                   type: string
+                action: string
               required:
                 - email
                 - code
