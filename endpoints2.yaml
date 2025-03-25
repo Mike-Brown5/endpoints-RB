@@ -289,6 +289,11 @@ paths:
           schema:
             type: string
           description: Filter by organization name
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by insurance categories
         - name: created_by
           in: query
           schema:
