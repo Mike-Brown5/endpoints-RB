@@ -54,10 +54,12 @@ paths:
                   type: string
                 code:
                   type: string
-                action: string
+                action:
+                  type: string
               required:
                 - email
                 - code
+                - action
       responses:
         '200':
           description: Email verified
