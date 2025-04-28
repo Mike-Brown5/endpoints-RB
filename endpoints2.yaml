@@ -250,7 +250,7 @@ paths:
 
   /api/filteredListings:
     get:
-      summary: Retrieve filtered listings
+      summary: Retrieve filtered listings with multiple optional filters
       security:
         - bearerAuth: []
       parameters:
@@ -258,50 +258,63 @@ paths:
           in: query
           schema:
             type: string
-          description: Filter by listing ID
+          description: Filter by one or more listing IDs (comma-separated)
         - name: searchTerm
           in: query
           schema:
             type: string
-          description: Search term for filtering
+          description: Keyword to search in listing_name, tags, line_of_business, iso_class_code, categories_insurance, or description
         - name: state
           in: query
           schema:
             type: string
-          description: Filter by active states
+          description: Comma-separated list of contact states; listings are returned if any associated contact’s state matches
         - name: organization_type
           in: query
           schema:
             type: string
-          description: Filter by organization type
-        - name: appointment_needed
-          in: query
-          schema:
-            type: boolean
-          description: Filter by appointment requirement
-        - name: approved_by
+          description: Comma-separated list of organization types (exact match, case-insensitive)
+        - name: line_of_business
           in: query
           schema:
             type: string
-          description: Filter by approval status
-        - name: org_name
-          in: query
-          schema:
-            type: string
-          description: Filter by organization name
+          description: Comma-separated list of lines of business (partial match, case-insensitive)
         - name: category
           in: query
           schema:
             type: string
-          description: Filter by insurance categories
+          description: Comma-separated list of insurance categories (exact match, case-insensitive)
+        - name: appointment_needed
+          in: query
+          schema:
+            type: boolean
+          description: Filter by whether an appointment is needed
+        - name: approved_by
+          in: query
+          schema:
+            type: string
+            enum:
+              - approved
+              - not_approved
+          description: ‘approved’ returns listings with non-empty approved_by; ‘not_approved’ returns those with empty approved_by
+        - name: org_name
+          in: query
+          schema:
+            type: string
+          description: Comma-separated list of organization names (partial match, case-insensitive)
+        - name: is_favorite
+          in: query
+          schema:
+            type: boolean
+          description: When true, only listings the user has favorited are returned
         - name: created_by
           in: query
           schema:
             type: string
-          description: Filter by creator
+          description: Filter by the creator’s username (only supports the current user)
       responses:
         '200':
-          description: A list of filtered listings
+          description: A JSON payload containing the filtered listings and summary counts
           content:
             application/json:
               schema:
@@ -313,19 +326,71 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
+                          type: integer
                         listing_name:
                           type: string
                         description:
                           type: string
-                        approved_by:
+                        tags:
+                          type: string
+                          description: Comma-separated tags
+                        line_of_business:
+                          type: string
+                        iso_class_code:
+                          type: string
+                        categories_insurance:
                           type: string
                         organization_type:
                           type: string
                         appointment_needed:
                           type: boolean
+                        approved_by:
+                          type: string
+                        org_name:
+                          type: string
+                        contacts:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
+                              phone:
+                                type: string
+                              email:
+                                type: string
+                              speciality:
+                                type: string
+                              city:
+                                type: string
+                              state:
+                                type: string
+                              org_name:
+                                type: string
+                              created_at:
+                                type: string
+                                format: date-time
+                        average_rating:
+                          type: number
+                          format: float
+                        user_rating:
+                          type: number
+                          format: float
+                        reviews_count:
+                          type: integer
+                        is_favorite:
+                          type: boolean
+                        organization_logo_url:
+                          type: string
+                          format: uri
+                          nullable: true
+                        active_listings:
+                          type: integer
                   appointment_needed_count:
                     type: integer
+                    description: Count of listings requiring an appointment
                   tags_summary:
                     type: array
                     items:
