@@ -296,7 +296,7 @@ paths:
             enum:
               - approved
               - not_approved
-          description: ‘approved’ returns listings with non-empty approved_by; ‘not_approved’ returns those with empty approved_by
+          description: "'approved' returns listings with non-empty approved_by; 'not_approved' returns those with empty approved_by"
         - name: org_name
           in: query
           schema:
